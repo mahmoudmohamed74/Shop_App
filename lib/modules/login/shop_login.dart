@@ -4,7 +4,7 @@ import 'package:conditional_builder_null_safety/conditional_builder_null_safety.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shop_app/layout/cubit/cubit.dart';
+import 'package:shop_app/shared/cubit/cubit.dart';
 import 'package:shop_app/layout/shop_layout.dart';
 import 'package:shop_app/modules/login/cubit/cubit.dart';
 import 'package:shop_app/modules/login/cubit/states.dart';

@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shop_app/layout/cubit/cubit.dart';
-import 'package:shop_app/layout/cubit/states.dart';
+import 'package:shop_app/shared/cubit/cubit.dart';
+import 'package:shop_app/shared/cubit/states.dart';
 import 'package:shop_app/layout/shop_layout.dart';
 import 'package:shop_app/modules/login/shop_login.dart';
 import 'package:shop_app/modules/on_boarding/on_boarding_screen.dart';

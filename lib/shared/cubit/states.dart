@@ -1,21 +1,79 @@
-abstract class AppStates {}
+import 'package:shop_app/models/change_favorites_model.dart';
+import 'package:shop_app/models/login_model.dart';
 
-class AppInitialState extends AppStates {}
+abstract class ShopStates {}
 
-class AppChangeBottomNavBarState extends AppStates {}
+class ShopInitialState extends ShopStates {}
 
-class AppCreateDatabaseState extends AppStates {}
+class ShopChangeBottomNavState extends ShopStates {}
 
-class AppGetDatabaseState extends AppStates {}
+class ShopLoadingHomeDataState extends ShopStates {}
 
-class AppUpdateDatabaseState extends AppStates {}
+class ShopSuccessHomeDataState extends ShopStates {}
 
-class AppDeleteDatabaseState extends AppStates {}
+class ShopErrorHomeDataState extends ShopStates {
+  final String error;
 
-class AppGetDatabaseLoadingState extends AppStates {}
+  ShopErrorHomeDataState(this.error);
+}
 
-class AppInsertDatabaseState extends AppStates {}
+class ShopSuccessCategoriesDataState extends ShopStates {}
 
-class AppChangeBottomSheetState extends AppStates {}
+class ShopErrorCategoriesDataState extends ShopStates {
+  final String error;
 
-class AppChangeModeState extends AppStates {}
+  ShopErrorCategoriesDataState(this.error);
+}
+
+class ShopSuccessChangeFavoritesState extends ShopStates {
+  final ChangeFavoritesModel
+      model; // ha a listen beha f product screen & اخدد منها رساله
+
+  ShopSuccessChangeFavoritesState(this.model);
+}
+
+class ShopChangeFavoritesState extends ShopStates {}
+
+class ShopErrorChangeFavoritesState extends ShopStates {
+  final String error;
+
+  ShopErrorChangeFavoritesState(this.error);
+}
+
+class ShopSuccessGetFavoritesDataState extends ShopStates {}
+
+class ShopLoadingGetFavoritesDataState extends ShopStates {}
+
+class ShopErrorGetFavoritesDataState extends ShopStates {
+  final String error;
+
+  ShopErrorGetFavoritesDataState(this.error);
+}
+
+class ShopSuccessGetUserDataState extends ShopStates {
+  final ShopLoginModel loginModel;
+
+  ShopSuccessGetUserDataState(this.loginModel);
+}
+
+class ShopLoadingGetUserDataState extends ShopStates {}
+
+class ShopErrorGetUserDataState extends ShopStates {
+  final String error;
+
+  ShopErrorGetUserDataState(this.error);
+}
+
+class ShopSuccessUpdateUserDataState extends ShopStates {
+  final ShopLoginModel loginModel;
+
+  ShopSuccessUpdateUserDataState(this.loginModel);
+}
+
+class ShopLoadingUpdateUserDataState extends ShopStates {}
+
+class ShopErrorUpdateUserDataState extends ShopStates {
+  final String error;
+
+  ShopErrorUpdateUserDataState(this.error);
+}

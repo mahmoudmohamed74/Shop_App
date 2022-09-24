@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:shop_app/layout/cubit/cubit.dart';
+import 'package:shop_app/shared/cubit/cubit.dart';
 import 'package:shop_app/shared/styles/colors.dart';
 
 Widget defaultButton({

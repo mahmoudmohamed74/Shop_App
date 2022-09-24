@@ -1,144 +1,150 @@
-// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print, avoid_function_literals_in_foreach_calls
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shop_app/shared/cubit/states.dart';
-import 'package:shop_app/shared/network/local/cache_helper.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:shop_app/models/categories_model.dart';
+import 'package:shop_app/models/change_favorites_model.dart';
+import 'package:shop_app/models/favoraites_model.dart';
+import 'package:shop_app/models/home_model.dart';
+import 'package:shop_app/models/login_model.dart';
+import 'package:shop_app/modules/categories/categories_screen.dart';
+import 'package:shop_app/modules/favorites/favorites_screen.dart';
+import 'package:shop_app/modules/products/products_screen.dart';
+import 'package:shop_app/modules/settings/settings_screen.dart';
+import 'package:shop_app/shared/components/constants.dart';
+import 'package:shop_app/shared/network/end_points.dart';
+import 'package:shop_app/shared/network/remote/dio_helper.dart';
 
-class AppCubit extends Cubit<AppStates> {
-  AppCubit() : super(AppInitialState());
-  static AppCubit get(context) => BlocProvider.of(context);
-
+class ShopCubit extends Cubit<ShopStates> {
+  ShopCubit() : super(ShopInitialState());
+  static ShopCubit get(context) => BlocProvider.of(context);
   int currentIndex = 0;
-  List<Widget> screens = [
-    // NewTasksScreen(),
-    // DoneTasksScreen(),
-    // ArchivedTasksScreen(),
+  List<Widget> bottomScreens = [
+    ProductsScreen(),
+    CategoriesScreen(),
+    FavoritesScreen(),
+    SettingsScreen(),
   ];
-  List<String> titles = ['Tasks', "Done Tasks", "Archived Tasks"];
-
-  late Database database;
-
-  List<Map> newTasks = [];
-  List<Map> doneTasks = [];
-  List<Map> archivedTasks = [];
-
-  void changeIndex(int index) {
+  void changeBottom(int index) {
     currentIndex = index;
-    emit(AppChangeBottomNavBarState());
+    emit(ShopChangeBottomNavState());
   }
 
-  void createDatabase() {
-    openDatabase("todo.db", version: 1, onCreate: (database, version) {
-      print("database created");
-
-      database
-          .execute(
-              'CREATE TABLE Tasks (id INTEGER PRIMARY KEY, title TEXT, date TEXT, time TEXT, status TEXT)')
-          .then((value) {
-        print("table created");
-      }).catchError((error) {
-        print("error when creating table ${error.toString()} ");
+  HomeModel? homeModel;
+  Map<int, bool> fave = {};
+  void getHomeData() {
+    emit(ShopLoadingHomeDataState());
+    DioHelper.getData(
+      url: HOME,
+      token: token,
+    ).then((value) {
+      homeModel = HomeModel.fromJson(value.data);
+      // printFullText(homeModel!.data!.banners[0].image.toString());
+      // print(homeModel!.data);
+      homeModel!.data!.products.forEach((element) {
+        fave.addAll({element.id!: element.inFavorites!});
+        emit(ShopSuccessHomeDataState());
       });
-    }, onOpen: (database) {
-      getDataFromDatabase(database);
-
-      print("database opened");
-    }).then((value) {
-      database = value;
-      emit(AppCreateDatabaseState());
+      print(fave.toString());
+    }).catchError((error) {
+      print(error.toString());
+      emit(ShopErrorHomeDataState(error));
     });
   }
 
-  insertToDatabase({
-    required String title,
-    required String time,
-    required String date,
-  }) async {
-    await database.transaction((txn) {
-      return txn
-          .rawInsert(
-        'INSERT INTO tasks(title, date, time, status) VALUES("$title", "$date", "$time", "new")', //sensetave fsh5555555
-      )
-          .then((value) {
-        print(" $value inserted successfully");
-        emit(AppInsertDatabaseState());
-        // b3d m 3mal insert bystore el gded & print & emit
-        getDataFromDatabase(database);
-      }).catchError((error) {
-        print("error when insearting new record ${error.toString()} ");
-      });
+  CategoriesModel? categoriesModel;
+  void getCategories() {
+    DioHelper.getData(
+      url: GET_CATEGORIES,
+      token: token,
+    ).then((value) {
+      categoriesModel = CategoriesModel.fromJson(value.data);
+      emit(ShopSuccessCategoriesDataState());
+    }).catchError((error) {
+      print(error.toString());
+      emit(ShopErrorCategoriesDataState(error.toString()));
     });
   }
 
-  void getDataFromDatabase(database) {
-    newTasks = [];
-    doneTasks = [];
-    archivedTasks = [];
-    // emit(AppGetDatabaseLoadingState());
-    database.rawQuery('SELECT * FROM tasks').then(
-      (value) {
-        value.forEach((element) {
-          if (element['status'] == 'new') {
-            newTasks.add(element);
-          } else if (element['status'] == 'done') {
-            doneTasks.add(element);
-          } else {
-            archivedTasks.add(element);
-          }
-        });
-        emit(AppGetDatabaseState());
+  ChangeFavoritesModel? changeFavoritesModel;
+  void changeFavorites(int? productId) {
+    fave[productId!] = !fave[productId]!; // تغير
+    emit(ShopChangeFavoritesState()); //يسمع ف لحظتها مينتظرش يدخل ال success
+
+    DioHelper.postData(
+      url: FAVORITES,
+      data: {
+        'product_id': productId,
       },
-    );
-  }
+      token: token,
+    ).then((value) {
+      changeFavoritesModel = ChangeFavoritesModel.fromJson(value.data);
+      if (!changeFavoritesModel!.status!) {
+        fave[productId] = !fave[productId]!; //ترجعه
+        // lw 7asl success f el server , error f el data(message = false)
+      } else {
+        getFavorites();
+      }
+      print(value.data);
+      emit(ShopSuccessChangeFavoritesState(changeFavoritesModel!));
+    }).catchError((error) {
+      fave[productId] = !fave[productId]!; // ترجعه
 
-  void updateDatabase({
-    required String? status,
-    required int? id,
-  }) async {
-    database.rawUpdate('UPDATE tasks SET status = ? WHERE id = ?',
-        ['$status', id]).then((value) {
-      getDataFromDatabase(database);
-
-      emit(AppUpdateDatabaseState());
+      print(error.toString());
+      emit(ShopErrorChangeFavoritesState(error.toString()));
     });
   }
 
-  void deleteDatabase({
-    required int? id,
-  }) async {
-    database.rawDelete('DELETE FROM tasks WHERE id = ?', [id]).then((value) {
-      getDataFromDatabase(database);
-
-      emit(AppDeleteDatabaseState());
+  FavoritesModel? favoritesModel;
+  void getFavorites() {
+    emit(ShopLoadingGetFavoritesDataState());
+    DioHelper.getData(
+      url: FAVORITES,
+      token: token,
+    ).then((value) {
+      favoritesModel = FavoritesModel.fromJson(value.data);
+      // printFullText(value.data.toString());
+      emit(ShopSuccessGetFavoritesDataState());
+    }).catchError((error) {
+      print(error.toString());
+      emit(ShopErrorGetFavoritesDataState(error.toString()));
     });
   }
 
-  bool isBottomSheetShown = false;
-  IconData fabIcon = Icons.edit;
+  ShopLoginModel? userModel;
+  void getUserData() {
+    emit(ShopLoadingGetUserDataState());
+    DioHelper.getData(
+      url: PROFILE,
+      token: token,
+    ).then((value) {
+      userModel = ShopLoginModel.fromJson(value.data);
+      // printFullText(userModel!.data!.name.toString());
+      emit(ShopSuccessGetUserDataState(userModel!));
+    }).catchError((error) {
+      print(error.toString());
+      emit(ShopErrorGetUserDataState(error.toString()));
+    });
+  }
 
-  void changeBottomSheetState({
-    required bool isShow,
-    required IconData icon,
+  void updateUserData({
+    required String? name,
+    required String? email,
+    required String? phone,
   }) {
-    isBottomSheetShown = isShow;
-    fabIcon = icon;
-    emit(AppChangeBottomSheetState());
-  }
-
-  bool isDark = false;
-  ThemeMode appMode = ThemeMode.dark;
-
-  void changeAppMode({bool? fromShared}) {
-    if (fromShared != null) {
-      isDark = fromShared;
-      emit(AppChangeModeState());
-    } else {
-      isDark = !isDark;
-      CacheHelper.putBoolean(key: "isDark", value: isDark).then((value) {
-        emit(AppChangeModeState());
-      });
-    }
+    emit(ShopLoadingUpdateUserDataState());
+    DioHelper.putData(url: UPDATE_PROFILE, token: token, data: {
+      "name": name,
+      "email": email,
+      "phone": phone,
+    }).then((value) {
+      userModel = ShopLoginModel.fromJson(value.data);
+      // printFullText(userModel!.data!.name.toString());
+      emit(ShopSuccessUpdateUserDataState(userModel!));
+    }).catchError((error) {
+      print(error.toString());
+      emit(ShopErrorUpdateUserDataState(error.toString()));
+    });
   }
 }
